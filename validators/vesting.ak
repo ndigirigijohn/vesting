@@ -13,13 +13,19 @@ pub type VestingDatum {
   lock_until: Int,
   /// Owner's credentials
   owner: VerificationKeyHash,
-  /// Beneficiary's credentialsa
+  /// Beneficiary's credentials
   beneficiary: VerificationKeyHash,
+  /// Version number - changing this will generate a different script address
+  version: Int,
+}
+
+// Helper function - adding this will change the script hash
+fn check_version(version: Int) -> Bool {
+  version >= 0
 }
  
 validator vesting {
-  // In principle, scripts can be used for different purpose (e.g. minting
-  // assets). Here we make sure it's only used when 'spending' from a eUTxO
+ 
   spend(
     datum_opt: Option<VestingDatum>,
     _redeemer: Data,
@@ -27,6 +33,10 @@ validator vesting {
     tx: Transaction,
   ) {
     expect Some(datum) = datum_opt
+    
+    // Use expect instead of let for the version check
+    expect True = check_version(datum.version)
+    
     or {
       key_signed(tx.extra_signatories, datum.owner),
       and {
@@ -67,6 +77,7 @@ fn vesting_datum() {
     lock_until: 1672843961000,
     owner: mock_pub_key_hash(1),
     beneficiary: mock_pub_key_hash(2),
+    version: 1,
   }
 }
  
